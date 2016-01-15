@@ -3,77 +3,75 @@
 /**
  * Authproc filter to create the eduPersonTargetedID attribute from the persistent NameID.
  *
- * @package simpleSAMLphp
  * @version $Id$
  */
-class sspmod_saml_Auth_Process_PersistentNameID2TargetedID extends SimpleSAML_Auth_ProcessingFilter {
+class sspmod_saml_Auth_Process_PersistentNameID2TargetedID extends SimpleSAML_Auth_ProcessingFilter
+{
+    /**
+     * The attribute we should save the NameID in.
+     *
+     * @var string
+     */
+    private $attribute;
 
-	/**
-	 * The attribute we should save the NameID in.
-	 *
-	 * @var string
-	 */
-	private $attribute;
+    /**
+     * Whether we should insert it as an saml:NameID element.
+     *
+     * @var bool
+     */
+    private $nameId;
 
+    /**
+     * Initialize this filter, parse configuration.
+     *
+     * @param array $config   Configuration information about this filter.
+     * @param mixed $reserved For future use.
+     */
+    public function __construct($config, $reserved)
+    {
+        parent::__construct($config, $reserved);
+        assert('is_array($config)');
 
-	/**
-	 * Whether we should insert it as an saml:NameID element.
-	 *
-	 * @var boolean
-	 */
-	private $nameId;
+        if (isset($config['attribute'])) {
+            $this->attribute = (string) $config['attribute'];
+        } else {
+            $this->attribute = 'eduPersonTargetedID';
+        }
 
+        if (isset($config['nameId'])) {
+            $this->nameId = (bool) $config['nameId'];
+        } else {
+            $this->nameId = true;
+        }
+    }
 
-	/**
-	 * Initialize this filter, parse configuration.
-	 *
-	 * @param array $config  Configuration information about this filter.
-	 * @param mixed $reserved  For future use.
-	 */
-	public function __construct($config, $reserved) {
-		parent::__construct($config, $reserved);
-		assert('is_array($config)');
+    /**
+     * Store a NameID to attribute.
+     *
+     * @param array &$state The request state.
+     */
+    public function process(&$state)
+    {
+        assert('is_array($state)');
 
-		if (isset($config['attribute'])) {
-			$this->attribute = (string)$config['attribute'];
-		} else {
-			$this->attribute = 'eduPersonTargetedID';
-		}
+        if (!isset($state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT])) {
+            SimpleSAML_Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
 
-		if (isset($config['nameId'])) {
-			$this->nameId = (bool)$config['nameId'];
-		} else {
-			$this->nameId = TRUE;
-		}
-	}
+            return;
+        }
 
+        $nameID = $state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT];
 
-	/**
-	 * Store a NameID to attribute.
-	 *
-	 * @param array &$state  The request state.
-	 */
-	public function process(&$state) {
-		assert('is_array($state)');
+        if ($this->nameId) {
+            $doc = new DOMDocument();
+            $root = $doc->createElement('root');
+            $doc->appendChild($root);
+            SAML2_Utils::addNameId($root, $nameID);
+            $value = $doc->saveXML($root->firstChild);
+        } else {
+            $value = $nameID['Value'];
+        }
 
-		if (!isset($state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT])) {
-			SimpleSAML_Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
-			return;
-		}
-
-		$nameID = $state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT];
-
-		if ($this->nameId) {
-			$doc = new DOMDocument();
-			$root = $doc->createElement('root');
-			$doc->appendChild($root);
-			SAML2_Utils::addNameId($root, $nameID);
-			$value = $doc->saveXML($root->firstChild);
-		} else {
-			$value = $nameID['Value'];
-		}
-
-		$state['Attributes'][$this->attribute] = array($value);
-	}
-
+        $state['Attributes'][$this->attribute] = array($value);
+    }
 }
