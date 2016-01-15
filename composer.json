@@ -1,0 +1,8 @@
+{
+    "name": "niif/simplesamlphp-module-shib2idpnameid",
+    "description": "Filter to generate generate PersistentNameID (and the value for eduPersonTargetedID) with the same algorithm as Shibboleth IdP does.",
+    "type": "simplesamlphp-module",
+    "require": {
+        "simplesamlphp/composer-module-installer": "^1.1"
+    }
+}
