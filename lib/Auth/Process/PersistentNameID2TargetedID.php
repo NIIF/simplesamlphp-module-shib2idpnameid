@@ -55,7 +55,7 @@ class sspmod_saml_Auth_Process_PersistentNameID2TargetedID extends SimpleSAML_Au
         assert('is_array($state)');
 
         if (!isset($state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT])) {
-            SimpleSAML_Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
+            SimpleSAML\Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
 
             return;
         }

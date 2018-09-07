@@ -41,26 +41,26 @@ class sspmod_shib2idpnameid_Auth_Process_PersistentNameID extends sspmod_saml_Ba
     protected function getValue(array &$state)
     {
         if (!isset($state['Destination']['entityid'])) {
-            SimpleSAML_Logger::warning('No SP entity ID - not generating persistent NameID.');
+            SimpleSAML\Logger::warning('No SP entity ID - not generating persistent NameID.');
 
             return;
         }
         $spEntityId = $state['Destination']['entityid'];
 
         if (!isset($state['Source']['entityid'])) {
-            SimpleSAML_Logger::warning('No IdP entity ID - not generating persistent NameID.');
+            SimpleSAML\Logger::warning('No IdP entity ID - not generating persistent NameID.');
 
             return;
         }
         $idpEntityId = $state['Source']['entityid'];
 
         if (!isset($state['Attributes'][$this->attribute]) || count($state['Attributes'][$this->attribute]) === 0) {
-            SimpleSAML_Logger::warning('Missing attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
+            SimpleSAML\Logger::warning('Missing attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
 
             return;
         }
         if (count($state['Attributes'][$this->attribute]) > 1) {
-            SimpleSAML_Logger::warning('More than one value in attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
+            SimpleSAML\Logger::warning('More than one value in attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
 
             return;
         }
