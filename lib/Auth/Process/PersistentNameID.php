@@ -23,7 +23,7 @@ class sspmod_shib2idpnameid_Auth_Process_PersistentNameID extends sspmod_saml_Ba
     public function __construct($config, $reserved)
     {
         parent::__construct($config, $reserved);
-        assert('is_array($config)');
+        assert(is_array($config));
 
         $this->format = SAML2_Const::NAMEID_PERSISTENT;
 
