@@ -1,11 +1,18 @@
 <?php
 
+namespace SimpleSAML\Module\shib2idpnameid\Auth\Process;
+
+use SAML2\Constants;
+use SAML2\XML\saml\NameID;
+use SimpleSAML\Auth\ProcessingFilter;
+use SimpleSAML\Logger;
+
 /**
  * Authproc filter to create the eduPersonTargetedID attribute from the persistent NameID.
  *
  * @version $Id$
  */
-class sspmod_saml_Auth_Process_PersistentNameID2TargetedID extends SimpleSAML_Auth_ProcessingFilter
+class PersistentNameID2TargetedID extends ProcessingFilter
 {
     /**
      * The attribute we should save the NameID in.
@@ -54,22 +61,18 @@ class sspmod_saml_Auth_Process_PersistentNameID2TargetedID extends SimpleSAML_Au
     {
         assert(is_array($state));
 
-        if (!isset($state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT])) {
-            SimpleSAML\Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
-
+        if (!isset($state['saml:NameID'][Constants::NAMEID_PERSISTENT])) {
+            Logger::warning('Unable to generate eduPersonTargetedID because no persistent NameID was available.');
             return;
         }
 
-        $nameID = $state['saml:NameID'][SAML2_Const::NAMEID_PERSISTENT];
+        /** @var NameID $nameID */
+        $nameID = $state['saml:NameID'][Constants::NAMEID_PERSISTENT];
 
         if ($this->nameId) {
-            $doc = new DOMDocument();
-            $root = $doc->createElement('root');
-            $doc->appendChild($root);
-            SAML2_Utils::addNameId($root, $nameID);
-            $value = $doc->saveXML($root->firstChild);
+            $value = $nameID;
         } else {
-            $value = $nameID['Value'];
+            $value = $nameID->getValue();
         }
 
         $state['Attributes'][$this->attribute] = array($value);

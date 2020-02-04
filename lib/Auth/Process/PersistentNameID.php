@@ -1,11 +1,21 @@
 <?php
 
+namespace SimpleSAML\Module\shib2idpnameid\Auth\Process;
+
+use DOMDocument;
+use SAML2\Constants;
+use SAML2\XML\saml\NameID;
+use SimpleSAML\Error\Exception;
+use SimpleSAML\Logger;
+use SimpleSAML\Module\saml\BaseNameIDGenerator;
+use SimpleSAML\Utils\Config;
+
 /**
  * Authproc filter to generate a persistent NameID using the same algorithm as Shibboleth IdP does.
  *
  * @version $Id$
  */
-class sspmod_shib2idpnameid_Auth_Process_PersistentNameID extends sspmod_saml_BaseNameIDGenerator
+class PersistentNameID extends BaseNameIDGenerator
 {
     /**
      * Which attribute contains the unique identifier of the user.
@@ -25,73 +35,69 @@ class sspmod_shib2idpnameid_Auth_Process_PersistentNameID extends sspmod_saml_Ba
         parent::__construct($config, $reserved);
         assert(is_array($config));
 
-        $this->format = SAML2_Const::NAMEID_PERSISTENT;
+        $this->format = Constants::NAMEID_PERSISTENT;
 
         if (!isset($config['attribute'])) {
-            throw new SimpleSAML_Error_Exception('PersistentNameID: Missing required option \'attribute\'.');
+            throw new Exception('PersistentNameID: Missing required option \'attribute\'.');
         }
         $this->attribute = $config['attribute'];
     }
 
     /**
      * Get the NameID value.
-     *
-     * @return string|NULL The NameID value.
+     * Calculates a shib style targeted id and set eduPersonTargetedId
+     * @param array $state The request state.
+     * @return null Always returns null
      */
     protected function getValue(array &$state)
     {
         if (!isset($state['Destination']['entityid'])) {
-            SimpleSAML\Logger::warning('No SP entity ID - not generating persistent NameID.');
+            Logger::warning('No SP entity ID - not generating persistent NameID.');
 
             return;
         }
         $spEntityId = $state['Destination']['entityid'];
 
         if (!isset($state['Source']['entityid'])) {
-            SimpleSAML\Logger::warning('No IdP entity ID - not generating persistent NameID.');
-
+            Logger::warning('No IdP entity ID - not generating persistent NameID.');
             return;
         }
         $idpEntityId = $state['Source']['entityid'];
 
         if (!isset($state['Attributes'][$this->attribute]) || count($state['Attributes'][$this->attribute]) === 0) {
-            SimpleSAML\Logger::warning('Missing attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
+            Logger::warning('Missing attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
 
             return;
         }
         if (count($state['Attributes'][$this->attribute]) > 1) {
-            SimpleSAML\Logger::warning('More than one value in attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
+            Logger::warning('More than one value in attribute '.var_export($this->attribute, true).' on user - not generating persistent NameID.');
 
             return;
         }
         $uid = array_values($state['Attributes'][$this->attribute]); /* Just in case the first index is no longer 0. */
         $uid = $uid[0];
 
-        $secretSalt = SimpleSAML_Utilities::getSecretSalt();
+        $secretSalt = Config::getSecretSalt();
 
         $uidData = $spEntityId.'!'.$uid.'!'.$secretSalt;
         $uid = base64_encode(hash('sha1', $uidData, true));
 
-        // Convert the targeted ID to a SAML 2.0 name identifier element.
-        $nameId = array(
-                'Format' => SAML2_Const::NAMEID_PERSISTENT,
-                'Value' => $uid,
-        );
 
-        if (isset($state['Source']['entityid'])) {
-            $nameId['NameQualifier'] = $state['Source']['entityid'];
-        }
-        if (isset($state['Destination']['entityid'])) {
-            $nameId['SPNameQualifier'] = $state['Destination']['entityid'];
-        }
+        // Convert the targeted ID to a SAML 2.0 name identifier element.
+        $nameId = new NameID();
+        $nameId->setValue($uid);
+        $nameId->setFormat(Constants::NAMEID_PERSISTENT);
+        $nameId->setSPNameQualifier($spEntityId);
+        $nameId->setNameQualifier($idpEntityId);
 
         $doc = new DOMDocument();
         $root = $doc->createElement('root');
         $doc->appendChild($root);
 
-        SAML2_Utils::addNameId($root, $nameId);
+        $nameId->toXML($root);
         $uid = $doc->saveXML($root->firstChild);
 
         $state['Attributes']['eduPersonTargetedID'] = array($uid);
+        return null;
     }
 }
