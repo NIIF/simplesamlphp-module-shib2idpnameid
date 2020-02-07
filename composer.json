@@ -2,6 +2,18 @@
     "name": "niif/simplesamlphp-module-shib2idpnameid",
     "description": "Filter to generate generate PersistentNameID (and the value for eduPersonTargetedID) with the same algorithm as Shibboleth IdP does.",
     "type": "simplesamlphp-module",
+    "homepage": "https://eduid.hu",
+    "license": "LGPL-2.1-only",
+    "authors": [
+        {
+            "name": "Tamás Frank",
+            "homepage": "https://franktamas.hu"
+        },
+        {
+            "name": "Attila László",
+            "homepage": "https://eduid.hu"
+        }
+    ],
     "require": {
         "simplesamlphp/composer-module-installer": "^1.1"
     },
